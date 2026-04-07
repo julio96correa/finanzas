@@ -15,7 +15,7 @@ public class Category {
     private UUID categoryId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Column(name = "title", nullable = false, length = 50)

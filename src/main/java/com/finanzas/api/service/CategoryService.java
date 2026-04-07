@@ -22,13 +22,13 @@ public class CategoryService {
 
     public List<CategoryResponse> getMyCategories() {
         UUID userId = getCurrentUser().getUserId();
-        return categoryRepository.findByUserUserId(userId)
+        return categoryRepository.findMyCategoriesAndGlobal(userId) // Usar nueva query
             .stream().map(this::toResponse).toList();
     }
 
     public List<CategoryResponse> getMyCategoriesByType(String type) {
         UUID userId = getCurrentUser().getUserId();
-        return categoryRepository.findByUserUserIdAndType(userId, type)
+        return categoryRepository.findMyCategoriesAndGlobalByType(userId, type) // Usar nueva query
             .stream().map(this::toResponse).toList();
     }
 
@@ -44,7 +44,7 @@ public class CategoryService {
     public CategoryResponse update(UUID id, CategoryRequest request) {
         Category category = categoryRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
-        validateOwnership(category.getUser().getUserId());
+        validateOwnership(category); // Pasar el objeto completo
         category.setTitle(request.getTitle());
         category.setType(request.getType());
         return toResponse(categoryRepository.save(category));
@@ -53,7 +53,7 @@ public class CategoryService {
     public void delete(UUID id) {
         Category category = categoryRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
-        validateOwnership(category.getUser().getUserId());
+        validateOwnership(category); // Pasar el objeto completo
         categoryRepository.delete(category);
     }
 
@@ -71,8 +71,14 @@ public class CategoryService {
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
 
-    private void validateOwnership(UUID ownerId) {
-        if (!getCurrentUser().getUserId().equals(ownerId)) {
+    private void validateOwnership(Category category) {
+        // Si la categoría no tiene usuario, es GLOBAL y no se puede tocar
+        if (category.getUser() == null) {
+            throw new RuntimeException("No puedes modificar una categoría global del sistema");
+        }
+
+        // Si tiene usuario, verificar que sea el dueño
+        if (!getCurrentUser().getUserId().equals(category.getUser().getUserId())) {
             throw new RuntimeException("No tienes permiso para esta acción");
         }
     }
